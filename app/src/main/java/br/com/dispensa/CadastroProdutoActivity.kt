@@ -4,41 +4,26 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Rect
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.KeyEvent
 import android.view.Gravity
-import android.view.MotionEvent
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import java.io.ByteArrayOutputStream
-import java.util.Locale
 import android.view.View
 
 
 class CadastroProdutoActivity : Activity() {
     private lateinit var bancoDados: ProdutoDatabase
-//     private lateinit var categorySpinner: Spinner
      private lateinit var codigobarraInput: EditText
-//     private lateinit var packageContentInput: EditText
-//     private lateinit var minimumInput: EditText
-//     private lateinit var unitSpinner: Spinner
      private lateinit var fotoPreview: ImageView
-//     private lateinit var productsList: LinearLayout
     private var fotoProduto: ByteArray? = null
 
     companion object {
@@ -49,25 +34,7 @@ class CadastroProdutoActivity : Activity() {
         super.onCreate(savedInstanceState)
         bancoDados = ProdutoDatabase(this)
         viewCabecalho()
-        // renderProducts()
     }
-
-//     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-//         if (event.action == MotionEvent.ACTION_DOWN) {
-//             val focused = currentFocus
-//             if (focused is EditText) {
-//                 val bounds = Rect()
-//                 focused.getGlobalVisibleRect(bounds)
-//                 if (!bounds.contains(event.rawX.toInt(), event.rawY.toInt())) {
-//                     focused.clearFocus()
-//                     (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
-//                         .hideSoftInputFromWindow(focused.windowToken, 0)
-//                 }
-//             }
-//         }
-//         return super.dispatchTouchEvent(event)
-//     }
-
     private fun viewCabecalho() {
         
         //CABEÇALHO
@@ -308,7 +275,6 @@ class CadastroProdutoActivity : Activity() {
             setColor(cor)
             cornerRadius = raio.toFloat()
         }
-    // função para ler o código de barras
     private fun lerCodigoBarras() {
         val opcoesLeitor = GmsBarcodeScannerOptions.Builder()
             .enableAutoZoom()
@@ -326,12 +292,16 @@ class CadastroProdutoActivity : Activity() {
                         .show()
                     codigobarraInput.requestFocus()
                     codigobarraInput.setText(null)
-                    
+
                 }
             }
             .addOnCanceledListener { }
             .addOnFailureListener {
-                Toast.makeText(this, "Não foi possível abrir o leitor. Tente novamente.", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    "Não foi possível abrir o leitor. Tente novamente.",
+                    Toast.LENGTH_LONG
+                ).show()
             }
     }
     // a parte de tirar foto do produto

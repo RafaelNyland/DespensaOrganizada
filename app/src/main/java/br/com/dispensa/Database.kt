@@ -94,9 +94,9 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
 
 // Funcoes de consulta e manipulacao de dados do banco de dados
 
-        fun allProducts(): List<Produto> = queryProducts(null, null)
+    fun allProducts(): List<Produto> = consultaProducts(null, null)
 
-    fun searchProducts(search: String, category: String? = null): List<Produto> {
+    fun procurarProdutos(search: String, category: String? = null): List<Produto> {
         val term = search.trim()
         val selection: String?
         val selectionArgs: Array<String>?
@@ -110,50 +110,10 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
             selection = "(nome LIKE ? OR codigo_barras = ?) AND categoria = ?"
             selectionArgs = arrayOf("%$term%", term, category)
         }
-        return queryProducts(selection, selectionArgs)
+        return consultaProducts(selection, selectionArgs)
     }
 
-//     fun productsWithMovements(): List<ProductMovementSummary> {
-//         val grouped = linkedMapOf<Long, Pair<Product, MutableList<MovementRecord>>>()
-//         readableDatabase.rawQuery(
-//             """SELECT p.id AS product_id, p.name, p.category, p.barcode, p.package_content, p.unit,
-//                       p.minimum_stock, p.photo, m.id AS movement_id, m.movement_type, m.quantity,
-//                       m.created_at, m.unit_price, m.expiry_date
-//                FROM products p
-//                INNER JOIN movements m ON m.product_id = p.id
-//                ORDER BY p.name COLLATE NOCASE ASC, m.created_at DESC""".trimIndent(),
-//             null
-//         ).use { cursor ->
-//             while (cursor.moveToNext()) {
-//                 val productId = cursor.getLong(cursor.getColumnIndexOrThrow("product_id"))
-//                 val productAndMovements = grouped.getOrPut(productId) {
-//                     val photoIndex = cursor.getColumnIndexOrThrow("photo")
-//                     val product = Product(
-//                         id = productId,
-//                         name = cursor.getString(cursor.getColumnIndexOrThrow("name")),
-//                         category = cursor.getString(cursor.getColumnIndexOrThrow("category")),
-//                         barcode = cursor.getString(cursor.getColumnIndexOrThrow("barcode")),
-//                         packageContent = cursor.getDouble(cursor.getColumnIndexOrThrow("package_content")),
-//                         unit = cursor.getString(cursor.getColumnIndexOrThrow("unit")),
-//                         minimumStock = cursor.getInt(cursor.getColumnIndexOrThrow("minimum_stock")),
-//                         photo = if (cursor.isNull(photoIndex)) null else cursor.getBlob(photoIndex)
-//                     )
-//                     product to mutableListOf()
-//                 }
-//                 productAndMovements.second += MovementRecord(
-//                     id = cursor.getLong(cursor.getColumnIndexOrThrow("movement_id")),
-//                     type = cursor.getString(cursor.getColumnIndexOrThrow("movement_type")),
-//                     quantity = cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
-//                     createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
-//                     unitPrice = cursor.getDouble(cursor.getColumnIndexOrThrow("unit_price")),
-//                     expiryDate = cursor.getString(cursor.getColumnIndexOrThrow("expiry_date"))
-//                 )
-//             }
-//         }
-//         return grouped.values.map { ProductMovementSummary(it.first, it.second) }
-//     }
-
-    private fun queryProducts(selection: String?, selectionArgs: Array<String>?): List<Produto> {
+    private fun consultaProducts(selection: String?, selectionArgs: Array<String>?): List<Produto> {
         val result = mutableListOf<Produto>()
         readableDatabase.query("produto", null, selection, selectionArgs, null, null, "nome COLLATE NOCASE ASC").use { cursor ->
             while (cursor.moveToNext()) {
@@ -171,14 +131,6 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
         }
         return result
     }
-
-//     fun currentStock(productId: Long): Int {
-//         readableDatabase.rawQuery(
-//             "SELECT COALESCE(SUM(CASE WHEN movement_type = 'IN' THEN quantity ELSE -quantity END), 0) FROM movements WHERE product_id = ?",
-//             arrayOf(productId.toString())
-//         ).use { cursor -> return if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
-//     }
-
 // movimentacao de retirada
         fun addMovementacaoRetirada(
             produtoId: Long,
