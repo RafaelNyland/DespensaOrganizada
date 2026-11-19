@@ -73,6 +73,11 @@ class MainActivity : Activity() {
                 setTextColor(verdeEscuro)
                 background = formato(verdeClaro, dp(12))
                 setPadding(dp(4), dp(6), dp(4), dp(6))
+                if (titulo.contains("ENTRADAS")) {
+                    setOnClickListener {
+                        startActivity(Intent(this@MainActivity, RegRetProdutosActivity::class.java))
+                    }
+                }
                 if (titulo.contains("MEUS")) {
                     setOnClickListener {
                         startActivity(Intent(this@MainActivity, MeusProdutosActivity::class.java))

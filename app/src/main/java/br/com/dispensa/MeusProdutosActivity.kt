@@ -17,6 +17,8 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import android.graphics.BitmapFactory
 import android.widget.ImageView
+import android.content.Intent
+
 
 class MeusProdutosActivity : Activity() {
     private val verdeEscuro = 0xFF10564F.toInt()
@@ -30,6 +32,7 @@ class MeusProdutosActivity : Activity() {
     private var categoriaSelecionada: String? = null
     private lateinit var textoQuantidade: TextView
     private lateinit var buscaInput: EditText
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -299,6 +302,15 @@ class MeusProdutosActivity : Activity() {
                 setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, Typeface.BOLD)
                 background = forma(verde, verde, 6)
+                setOnClickListener {
+                    val telaEditar = Intent(
+                        this@MeusProdutosActivity,
+                        EditarProdutosActivity::class.java
+                    )
+                    telaEditar.putExtra("produto_id", produto.id)
+                    telaEditar.putExtra("produto_nome", nome)
+                    this@MeusProdutosActivity.startActivity(telaEditar)
+                }
             }, LinearLayout.LayoutParams(dp(54), dp(30)))
             cartaoLista.addView(itemfoto)
             if (index < produtos.lastIndex) {

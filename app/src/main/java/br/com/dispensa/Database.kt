@@ -32,6 +32,7 @@ data class Estoque_Atual(
     val quantidade: Int,
     val data_validade: String
 )
+
 //Criação das tabelas do banco de dados
 class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db", null, 14) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -79,6 +80,7 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
             )""".trimIndent()
         )
     }
+
     private fun CriarTabelaEstoqueAtual(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE IF NOT EXISTS estoque_atual (
@@ -95,6 +97,30 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
 // Funcoes de consulta e manipulacao de dados do banco de dados
 
     fun allProducts(): List<Produto> = consultaProducts(null, null)
+
+    // total de produtos no estoque em todos os locais
+    fun totalEstoqueProduto(produtoId: Long): Int = readableDatabase.rawQuery(
+        "SELECT COALESCE(SUM(quantidade), 0) FROM estoque_atual WHERE produto_id = ?",
+        arrayOf(produtoId.toString())
+    ).use { cursor ->
+        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+    }
+
+    // totol de produtos no estoque no local
+    fun totalEstoqueProdutoLocal(produtoId: Long, local: String): Int = readableDatabase.rawQuery(
+        "SELECT COALESCE(SUM(quantidade), 0) FROM estoque_atual WHERE produto_id = ? AND local_guardado = ?",
+        arrayOf(produtoId.toString(), local)
+    ).use { cursor ->
+        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+    }
+
+    // funcao para a validade mais proxima do produto no local
+    fun validadeMaisProxima(produtoId: Long, local: String): String? = readableDatabase.rawQuery(
+        "SELECT data_validade FROM estoque_atual WHERE produto_id = ? AND local_guardado = ? AND quantidade > 0 AND data_validade <> '' ORDER BY data_validade ASC LIMIT 1",
+        arrayOf(produtoId.toString(), local)
+    ).use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
 
     fun procurarProdutos(search: String, category: String? = null): List<Produto> {
         val term = search.trim()
@@ -115,105 +141,107 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
 
     private fun consultaProducts(selection: String?, selectionArgs: Array<String>?): List<Produto> {
         val result = mutableListOf<Produto>()
-        readableDatabase.query("produto", null, selection, selectionArgs, null, null, "nome COLLATE NOCASE ASC").use { cursor ->
-            while (cursor.moveToNext()) {
-                result += Produto(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
-                    nome = cursor.getString(cursor.getColumnIndexOrThrow("nome")),
-                    categoria = cursor.getString(cursor.getColumnIndexOrThrow("categoria")),
-                    codigo_barras = cursor.getString(cursor.getColumnIndexOrThrow("codigo_barras")),
-                    conteudo_embalagem = cursor.getDouble(cursor.getColumnIndexOrThrow("conteudo_embalagem")),
-                    unidade = cursor.getString(cursor.getColumnIndexOrThrow("unidade")),
-                    estoque_minimo = cursor.getInt(cursor.getColumnIndexOrThrow("estoque_minimo")),
-                    foto = cursor.getBlob(cursor.getColumnIndexOrThrow("foto"))
-                )
+        readableDatabase.query("produto", null, selection, selectionArgs, null, null, "nome COLLATE NOCASE ASC")
+            .use { cursor ->
+                while (cursor.moveToNext()) {
+                    result += Produto(
+                        id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                        nome = cursor.getString(cursor.getColumnIndexOrThrow("nome")),
+                        categoria = cursor.getString(cursor.getColumnIndexOrThrow("categoria")),
+                        codigo_barras = cursor.getString(cursor.getColumnIndexOrThrow("codigo_barras")),
+                        conteudo_embalagem = cursor.getDouble(cursor.getColumnIndexOrThrow("conteudo_embalagem")),
+                        unidade = cursor.getString(cursor.getColumnIndexOrThrow("unidade")),
+                        estoque_minimo = cursor.getInt(cursor.getColumnIndexOrThrow("estoque_minimo")),
+                        foto = cursor.getBlob(cursor.getColumnIndexOrThrow("foto"))
+                    )
+                }
             }
-        }
         return result
     }
-// movimentacao de retirada
-        fun addMovementacaoRetirada(
-            produtoId: Long,
-            local_guardado: String,
-            quantidade: Int
-        ): Boolean {
-            if (quantidade <= 0) return false
 
-            val db = writableDatabase
-            db.beginTransaction()
-            try {
-                //lista de lotes disponíveis para o produto no local especificado, ordenados por validade
-                val lotes = mutableListOf<Pair<String, Int>>()
-                //consulta os lotes do produto para o local
-                db.query(
-                    "estoque_atual",
-                    arrayOf("data_validade", "quantidade"),
-                    "produto_id = ? AND local_guardado = ? AND quantidade > 0",
-                    arrayOf(produtoId.toString(), local_guardado),
-                    null,
-                    null,
-                    //deixa as datas da mais proxima para a mais distante
-                    "CASE WHEN data_validade = '' THEN 1 ELSE 0 END, data_validade ASC"
-                ).use { cursor ->
-                    while (cursor.moveToNext()) {
-                        lotes += cursor.getString(0) to cursor.getInt(1)
-                    }
+    // movimentacao de retirada
+    fun addMovementacaoRetirada(
+        produtoId: Long,
+        local_guardado: String,
+        quantidade: Int
+    ): Boolean {
+        if (quantidade <= 0) return false
+
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            //lista de lotes disponíveis para o produto no local especificado, ordenados por validade
+            val lotes = mutableListOf<Pair<String, Int>>()
+            //consulta os lotes do produto para o local
+            db.query(
+                "estoque_atual",
+                arrayOf("data_validade", "quantidade"),
+                "produto_id = ? AND local_guardado = ? AND quantidade > 0",
+                arrayOf(produtoId.toString(), local_guardado),
+                null,
+                null,
+                //deixa as datas da mais proxima para a mais distante
+                "CASE WHEN data_validade = '' THEN 1 ELSE 0 END, data_validade ASC"
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    lotes += cursor.getString(0) to cursor.getInt(1)
                 }
-                // soma as quantidades encontradas, se o total for menor que a quantidade pedida, retorna false
-                val totalDisponivel = lotes.sumOf { it.second }
-                if (quantidade > totalDisponivel) return false
+            }
+            // soma as quantidades encontradas, se o total for menor que a quantidade pedida, retorna false
+            val totalDisponivel = lotes.sumOf { it.second }
+            if (quantidade > totalDisponivel) return false
 
-                var faltaRetirar = quantidade
-                // percorre cada lote e retira so a quantidade disponivel
-                for ((validade, disponivel) in lotes) {
-                    if (faltaRetirar == 0) break
+            var faltaRetirar = quantidade
+            // percorre cada lote e retira so a quantidade disponivel
+            for ((validade, disponivel) in lotes) {
+                if (faltaRetirar == 0) break
 
-                    val retiradaDesteLote = minOf(faltaRetirar, disponivel)
-                    val restante = disponivel - retiradaDesteLote
+                val retiradaDesteLote = minOf(faltaRetirar, disponivel)
+                val restante = disponivel - retiradaDesteLote
 
+                val valoresEstoque = ContentValues().apply {
+                    put("quantidade", restante)
+                }
+                //verifica se a quantidade restante é 0, se for, deleta o registro do estoque atual, caso contrario atualiza a quantidade
+                if (restante == 0) {
+                    db.delete(
+                        "estoque_atual",
+                        "produto_id = ? AND local_guardado = ? AND data_validade = ?",
+                        arrayOf(produtoId.toString(), local_guardado, validade)
+                    )
+                } else {
                     val valoresEstoque = ContentValues().apply {
                         put("quantidade", restante)
                     }
-                    //verifica se a quantidade restante é 0, se for, deleta o registro do estoque atual, caso contrario atualiza a quantidade
-                        if (restante == 0) {
-                            db.delete(
-                                "estoque_atual",
-                                "produto_id = ? AND local_guardado = ? AND data_validade = ?",
-                                arrayOf(produtoId.toString(), local_guardado, validade)
-                            )
-                        } else {
-                            val valoresEstoque = ContentValues().apply {
-                                put("quantidade", restante)
-                            }
-                            db.update(
-                                "estoque_atual",
-                                valoresEstoque,
-                                "produto_id = ? AND local_guardado = ? AND data_validade = ?",
-                                arrayOf(produtoId.toString(), local_guardado, validade)
-                            )
-                        }
-                    //salva a movimentacao de retirada no banco de dados
-                    val valoresMovimentacao = ContentValues().apply {
-                        put("produto_id", produtoId)
-                        put("tipo_movimentacao", "RETIRADA")
-                        put("local_guardado", local_guardado)
-                        put("quantidade", retiradaDesteLote)
-                        put("data_hora", System.currentTimeMillis())
-                        put("preco_unitario", 0.0)
-                        put("data_validade", validade)
-                    }
-                    db.insertOrThrow("movimentacao", null, valoresMovimentacao)
-
-                    faltaRetirar -= retiradaDesteLote
+                    db.update(
+                        "estoque_atual",
+                        valoresEstoque,
+                        "produto_id = ? AND local_guardado = ? AND data_validade = ?",
+                        arrayOf(produtoId.toString(), local_guardado, validade)
+                    )
                 }
+                //salva a movimentacao de retirada no banco de dados
+                val valoresMovimentacao = ContentValues().apply {
+                    put("produto_id", produtoId)
+                    put("tipo_movimentacao", "RETIRADA")
+                    put("local_guardado", local_guardado)
+                    put("quantidade", retiradaDesteLote)
+                    put("data_hora", System.currentTimeMillis())
+                    put("preco_unitario", 0.0)
+                    put("data_validade", validade)
+                }
+                db.insertOrThrow("movimentacao", null, valoresMovimentacao)
 
-                db.setTransactionSuccessful()
-                return true
-            } finally {
-                db.endTransaction()
+                faltaRetirar -= retiradaDesteLote
             }
+
+            db.setTransactionSuccessful()
+            return true
+        } finally {
+            db.endTransaction()
         }
-    
+    }
+
     fun addMovementacaoEntrada(
         produtoId: Long,
         local_guardado: String,
@@ -248,6 +276,7 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
             db.endTransaction()
         }
     }
+
     private fun atualizarEstoqueAtual(
         db: SQLiteDatabase,
         produtoId: Long,
@@ -309,31 +338,29 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
         }
         writableDatabase.insertOrThrow("produto", null, values)
     }
-//Verifica se o nome do produto já existe no banco de dados
+
+    //Verifica se o nome do produto já existe no banco de dados
     fun nomeExiste(name: String): Boolean {
         readableDatabase.query(
             "produto", arrayOf("id"), "LOWER(TRIM(nome)) = LOWER(TRIM(?))", arrayOf(name.trim()), null, null, null, "1"
         ).use { return it.moveToFirst() }
     }
+
 //Verifica se o codigo do produto já existe no banco de dados
 
     fun barcodeExists(barcode: String): Boolean {
         val normalizedBarcode = barcode.trim()
         if (normalizedBarcode.isEmpty()) return false
         readableDatabase.query(
-            "produto", arrayOf("id"), "LOWER(TRIM(codigo_barras)) = LOWER(TRIM(?))", arrayOf(normalizedBarcode), null, null, null, "1"
+            "produto",
+            arrayOf("id"),
+            "LOWER(TRIM(codigo_barras)) = LOWER(TRIM(?))",
+            arrayOf(normalizedBarcode),
+            null,
+            null,
+            null,
+            "1"
         ).use { return it.moveToFirst() }
     }
 
-//     fun deleteProduct(id: Long) {
-//         val db = writableDatabase
-//         db.beginTransaction()
-//         try {
-//             db.delete("movements", "product_id = ?", arrayOf(id.toString()))
-//             db.delete("products", "id = ?", arrayOf(id.toString()))
-//             db.setTransactionSuccessful()
-//         } finally {
-//             db.endTransaction()
-//         }
-//     }
 }

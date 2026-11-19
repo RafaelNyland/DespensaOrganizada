@@ -22,5 +22,14 @@
         <activity
             android:name=".MeusProdutosActivity"
             android:exported="false" />
+        <activity
+            android:name=".RegRetProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditarProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MovProdutosActivity"
+            android:exported="false" />
     </application>
 </manifest>
