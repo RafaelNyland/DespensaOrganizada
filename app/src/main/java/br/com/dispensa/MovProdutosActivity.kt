@@ -23,6 +23,11 @@ import android.text.InputType
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import android.content.Intent
+import android.graphics.Bitmap
+import android.provider.MediaStore
+import android.widget.Spinner
+import java.io.ByteArrayOutputStream
 
 class MovProdutosActivity : Activity() {
     private val verdeEscuro = 0xFF10564F.toInt()
@@ -153,7 +158,7 @@ class MovProdutosActivity : Activity() {
         if (foto != null && foto.isNotEmpty()) {
             itemfoto.addView(
                 ImageView(this).apply {
-                    contentDescription = "Foto de ${nomeProduto}"
+                    contentDescription = "Foto de $nomeProduto"
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageBitmap(BitmapFactory.decodeByteArray(foto, 0, foto.size))
                     background = forma(
@@ -422,7 +427,7 @@ class MovProdutosActivity : Activity() {
         if (foto != null && foto.isNotEmpty()) {
             itemfoto.addView(
                 ImageView(this).apply {
-                    contentDescription = "Foto de ${nomeProduto}"
+                    contentDescription = "Foto de $nomeProduto"
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageBitmap(BitmapFactory.decodeByteArray(foto, 0, foto.size))
                     background = forma(
@@ -467,6 +472,198 @@ class MovProdutosActivity : Activity() {
         itemfoto.addView(cartaoProduto)
         conteudo.addView(itemfoto)
 
+        val cartaoFormulario = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(14))
+            background = forma(0xFFFFFFFF.toInt(), linha, 12)
+        }
+
+        cartaoFormulario.addView(rotulo("Quantidade de retirada"))
+        var quantidade = 1
+        val quantidadeTexto = TextView(this).apply {
+            text = "$quantidade un."
+            gravity = Gravity.CENTER
+            textSize = 14f
+            setTextColor(0xFF243C39.toInt())
+        }
+        var atualizarPrevisao: () -> Unit = {}
+        val controleQuantidade = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(6), dp(8), dp(6))
+            background = forma(0xFFFFFFFF.toInt(), linha, 8)
+        }
+
+        fun atualizarQuantidade(nova: Int) {
+            quantidade = nova.coerceAtLeast(1)
+            quantidadeTexto.text = "$quantidade un."
+            atualizarPrevisao()
+        }
+        controleQuantidade.addView(TextView(this).apply {
+            text = "−"; textSize = 20f; gravity = Gravity.CENTER; setTextColor(verde)
+            setOnClickListener { atualizarQuantidade(quantidade - 1) }
+        }, LinearLayout.LayoutParams(dp(32), dp(32)))
+        controleQuantidade.addView(quantidadeTexto, LinearLayout.LayoutParams(dp(76), -2))
+        controleQuantidade.addView(TextView(this).apply {
+            text = "+"; textSize = 20f; gravity = Gravity.CENTER; setTextColor(verde)
+            setOnClickListener { atualizarQuantidade(quantidade + 1) }
+        }, LinearLayout.LayoutParams(dp(32), dp(32)))
+        cartaoFormulario.addView(controleQuantidade)
+        val linhaCampos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val locaisproduto = bancoDados.listarLocaisPorProduto(produtoEncontrado.id)
+        if (locaisproduto.isEmpty()) {
+            Toast.makeText(
+                this,
+                "Não há locais registrados  para este produto.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        val locaisprodutocoluna = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), 0, 0, 0)
+        }
+        locaisprodutocoluna.addView(rotulo("Locais do produto"))
+        val locaisspi = Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(
+                this@MovProdutosActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                locaisproduto
+            )
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }
+        locaisprodutocoluna.addView(locaisspi, campoParams())
+
+        cartaoFormulario.addView(locaisprodutocoluna)
+
+        cartaoFormulario.addView(linhaCampos)
+        val localInput = locaisspi.selectedItem?.toString().orEmpty()
+
+        val validadesdoproduto = bancoDados.listarDataValidadePorProdutoLocal(produtoEncontrado.id, localInput)
+        if (validadesdoproduto.isEmpty()) {
+            Toast.makeText(
+                this,
+                "Não há validades cadastradas para este produto neste local.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+        val validadesdoprodutoformatada = validadesdoproduto.map { validadesdoproduto ->
+            SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                .parse(validadesdoproduto)
+                ?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it) }
+                .orEmpty()
+        }
+        val validadeColiuna = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), 0, 0, 0)
+        }
+        validadeColiuna.addView(rotulo("Datas de Validades do produto neste local"))
+        val vencimento = Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(
+                this@MovProdutosActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                validadesdoprodutoformatada
+            )
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }
+        validadeColiuna.addView(vencimento, campoParams())
+
+        cartaoFormulario.addView(validadeColiuna)
+
+        conteudo.addView(cartaoFormulario, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        val estoqueAtual = bancoDados.totalEstoqueProduto(id)
+        val previsao = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = forma(verdeEscuro, verdeEscuro, 12)
+        }
+        previsao.addView(TextView(this).apply {
+            text = "Como ficará o estoque"
+            textSize = 11f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, Typeface.BOLD)
+        })
+        val valoresPrevisao = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val estoqueAntes = TextView(this).apply {
+            text = "$estoqueAtual un."; textSize = 20f; setTextColor(0xFFFFFFFF.toInt()); setTypeface(
+            null,
+            Typeface.BOLD
+        )
+        }
+        val estoqueDepois = TextView(this).apply {
+            text = "${estoqueAtual - quantidade} un."; gravity = Gravity.END; textSize =
+            20f; setTextColor(0xFFFFFFFF.toInt()); setTypeface(null, Typeface.BOLD)
+        }
+        valoresPrevisao.addView(estoqueAntes, LinearLayout.LayoutParams(0, -2, 1f))
+        valoresPrevisao.addView(TextView(this).apply { text = "→"; textSize = 18f; setTextColor(0xFFB7D5CE.toInt()) })
+        valoresPrevisao.addView(estoqueDepois, LinearLayout.LayoutParams(0, -2, 1f))
+        previsao.addView(valoresPrevisao)
+
+        atualizarPrevisao = { estoqueDepois.text = "${estoqueAtual - quantidade} un." }
+        conteudo.addView(previsao, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        // val listarLocaisPorProduto = bancoDados.listarLocaisPorProduto(produtoEncontrado.id)
+        // Toast.makeText(
+        //     this@MovProdutosActivity,
+        //     "$listarLocaisPorProduto",
+        //     3000
+        // ).show()
+        val registrar = Button(this).apply {
+            text = "REGISTRAR RETIRADA"
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, Typeface.BOLD)
+            background = forma(verde, verde, 8)
+            setOnClickListener {
+                val vencimentoInput = vencimento.selectedItem?.toString().orEmpty()
+                val localInput = locaisspi.selectedItem?.toString().orEmpty()
+                val localInformado = localInput.trim()
+                val validadeExibida = vencimentoInput.trim()
+                val validadeBanco = if (validadeExibida.isBlank()) ""
+                else try {
+                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply { isLenient = false }
+                        .parse(validadeExibida)?.let { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(it) }.orEmpty()
+                } catch (_: Exception) {
+                    ""
+                }
+                if (localInformado.isBlank()) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Informe o local de armazenamento valido.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                if (validadeExibida.isNotBlank() && validadeBanco.isBlank()) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Informe uma data de vencimento válida.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                Toast.makeText(
+                    this@MovProdutosActivity,
+                    "$validadeExibida $validadeBanco $localInformado $quantidade $nomeProduto",
+                    Toast.LENGTH_LONG
+                ).show()
+                // val sucesso =
+                //     bancoDados.addMovementacaoRetirada(id, localInformado, quantidade)
+                // if (sucesso) {
+                //     Toast.makeText(this@MovProdutosActivity, "Retirada registrada com sucesso.", Toast.LENGTH_SHORT)
+                //         .show()
+                //     finish()
+                // } else Toast.makeText(
+                //     this@MovProdutosActivity,
+                //     "Não foi possível registrar a retirada.",
+                //     Toast.LENGTH_SHORT
+                // ).show()
+            }
+        }
+        raiz.addView(registrar, LinearLayout.LayoutParams(-1, dp(48)).apply {
+            setMargins(dp(16), dp(8), dp(16), dp(50))
+        })
         setContentView(raiz)
     }
 
@@ -497,6 +694,11 @@ class MovProdutosActivity : Activity() {
         android.graphics.drawable.GradientDrawable().apply {
             setColor(cor)
             cornerRadius = raio.toFloat()
+        }
+
+    private fun campoParams() =
+        LinearLayout.LayoutParams(-1, dp(44)).apply {
+            bottomMargin = dp(8)
         }
 
 }

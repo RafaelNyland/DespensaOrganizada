@@ -159,6 +159,42 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
         return result
     }
 
+    fun listarLocaisPorProduto(produtoId: Long): List<String> {
+        val result = mutableListOf<String>()
+        readableDatabase.query(
+            "estoque_atual",
+            arrayOf("local_guardado"),
+            "produto_id = ? AND quantidade > 0",
+            arrayOf(produtoId.toString()),
+            "local_guardado",
+            null,
+            "local_guardado COLLATE NOCASE ASC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                result += cursor.getString(0)
+            }
+        }
+        return result
+    }
+
+    fun listarDataValidadePorProdutoLocal(produtoId: Long, local: String): List<String> {
+        val result = mutableListOf<String>()
+        readableDatabase.query(
+            "estoque_atual",
+            arrayOf("data_validade"),
+            "produto_id = ? AND local_guardado = ? AND quantidade > 0",
+            arrayOf(produtoId.toString(), local),
+            null,
+            null,
+            "CASE WHEN data_validade = '' THEN 1 ELSE 0 END, data_validade ASC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                result += cursor.getString(0)
+            }
+        }
+        return result
+    }
+
     // movimentacao de retirada
     fun addMovementacaoRetirada(
         produtoId: Long,
