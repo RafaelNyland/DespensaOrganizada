@@ -54,15 +54,19 @@ class MovProdutosActivity : Activity() {
                 montarTelaEntrada(id, nome)
 
             } else if (tipoMovimentacao == "RETIRADA") {
-                montarTelaRetirada(id, nome)
-
+                if (bancoDados.totalEstoqueProduto(id) <= 0) {
+                    Toast.makeText(this, "Não há estoque disponível para retirada.", Toast.LENGTH_SHORT).show()
+                    montarTelaEmpty("Não há estoque disponível para retirada.")
+                } else {
+                    montarTelaRetirada(id, nome)
+                }
             }
         } else {
-            montarTelaEmpty(id, nome)
+            montarTelaEmpty("Aconteceu alguns erros ao localizar o produto. Por favor, tente novamente.")
         }
     }
 
-    private fun montarTelaEmpty(id: Long, nome: String) {
+    private fun montarTelaEmpty(erro: String) {
         val raiz = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(fundo)
@@ -73,13 +77,13 @@ class MovProdutosActivity : Activity() {
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
         cabecalho.addView(TextView(this).apply {
-            text = "Produto não encontrado"
+            text = "ERROR "
             textSize = 22f
             setTextColor(0xFF1D3936.toInt())
             setTypeface(null, Typeface.BOLD)
         })
         cabecalho.addView(TextView(this).apply {
-            text = "Aconteceu um erro ao localizar o produto. Por favor, tente novamente."
+            text = "$erro"
             textSize = 12f
             setTextColor(cinza)
             setPadding(0, dp(4), 0, 0)
@@ -300,7 +304,6 @@ class MovProdutosActivity : Activity() {
         valoresPrevisao.addView(estoqueAntes, LinearLayout.LayoutParams(0, -2, 1f))
         valoresPrevisao.addView(TextView(this).apply { text = "→"; textSize = 18f; setTextColor(0xFFB7D5CE.toInt()) })
         valoresPrevisao.addView(estoqueDepois, LinearLayout.LayoutParams(0, -2, 1f))
-        previsao.addView(valoresPrevisao)
 
         atualizarPrevisao = { estoqueDepois.text = "${estoqueAtual + quantidade} un." }
 
@@ -486,7 +489,7 @@ class MovProdutosActivity : Activity() {
             textSize = 14f
             setTextColor(0xFF243C39.toInt())
         }
-        var atualizarPrevisao: () -> Unit = {}
+        var atualizarPrevisao1: () -> Unit = {}
         val controleQuantidade = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -497,7 +500,7 @@ class MovProdutosActivity : Activity() {
         fun atualizarQuantidade(nova: Int) {
             quantidade = nova.coerceAtLeast(1)
             quantidadeTexto.text = "$quantidade un."
-            atualizarPrevisao()
+            atualizarPrevisao1()
         }
         controleQuantidade.addView(TextView(this).apply {
             text = "−"; textSize = 20f; gravity = Gravity.CENTER; setTextColor(verde)
@@ -509,20 +512,17 @@ class MovProdutosActivity : Activity() {
             setOnClickListener { atualizarQuantidade(quantidade + 1) }
         }, LinearLayout.LayoutParams(dp(32), dp(32)))
         cartaoFormulario.addView(controleQuantidade)
-        val linhaCampos = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+
+
+        // spinner para selecionar o local do produto
         val locaisproduto = bancoDados.listarLocaisPorProduto(produtoEncontrado.id)
-        if (locaisproduto.isEmpty()) {
-            Toast.makeText(
-                this,
-                "Não há locais registrados  para este produto.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+
         val locaisprodutocoluna = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(8), 0, 0, 0)
         }
         locaisprodutocoluna.addView(rotulo("Locais do produto"))
+
         val locaisspi = Spinner(this).apply {
             adapter = android.widget.ArrayAdapter(
                 this@MovProdutosActivity,
@@ -532,78 +532,181 @@ class MovProdutosActivity : Activity() {
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
         locaisprodutocoluna.addView(locaisspi, campoParams())
-
         cartaoFormulario.addView(locaisprodutocoluna)
 
-        cartaoFormulario.addView(linhaCampos)
-        val localInput = locaisspi.selectedItem?.toString().orEmpty()
-
-        val validadesdoproduto = bancoDados.listarDataValidadePorProdutoLocal(produtoEncontrado.id, localInput)
-        if (validadesdoproduto.isEmpty()) {
-            Toast.makeText(
-                this,
-                "Não há validades cadastradas para este produto neste local.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        val validadesdoprodutoformatada = validadesdoproduto.map { validadesdoproduto ->
-            SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                .parse(validadesdoproduto)
-                ?.let { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it) }
-                .orEmpty()
-        }
-        val validadeColiuna = LinearLayout(this).apply {
+        val validadeColuna = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(8), 0, 0, 0)
         }
-        validadeColiuna.addView(rotulo("Datas de Validades do produto neste local"))
+        validadeColuna.addView(rotulo("Datas de validade do produto neste local"))
+
         val vencimento = Spinner(this).apply {
-            adapter = android.widget.ArrayAdapter(
-                this@MovProdutosActivity,
-                android.R.layout.simple_spinner_dropdown_item,
-                validadesdoprodutoformatada
-            )
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
-        validadeColiuna.addView(vencimento, campoParams())
+        validadeColuna.addView(vencimento, campoParams())
+        cartaoFormulario.addView(validadeColuna)
 
-        cartaoFormulario.addView(validadeColiuna)
-
-        conteudo.addView(cartaoFormulario, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
-
-        val estoqueAtual = bancoDados.totalEstoqueProduto(id)
         val previsao = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
             background = forma(verdeEscuro, verdeEscuro, 12)
         }
-        previsao.addView(TextView(this).apply {
-            text = "Como ficará o estoque"
+
+        val tituloPrevisao = TextView(this).apply {
             textSize = 11f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, Typeface.BOLD)
-        })
+        }
+        previsao.addView(tituloPrevisao)
+
         val valoresPrevisao = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
+
         val estoqueAntes = TextView(this).apply {
-            text = "$estoqueAtual un."; textSize = 20f; setTextColor(0xFFFFFFFF.toInt()); setTypeface(
-            null,
-            Typeface.BOLD
-        )
+            textSize = 20f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, Typeface.BOLD)
+        }
+        val setaPrevisao = TextView(this).apply {
+            text = "→"
+            textSize = 18f
+            setTextColor(0xFFB7D5CE.toInt())
         }
         val estoqueDepois = TextView(this).apply {
-            text = "${estoqueAtual - quantidade} un."; gravity = Gravity.END; textSize =
-            20f; setTextColor(0xFFFFFFFF.toInt()); setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.END
+            textSize = 20f
+            setTextColor(0xFFFFFFFF.toInt())
+            setTypeface(null, Typeface.BOLD)
         }
-        valoresPrevisao.addView(estoqueAntes, LinearLayout.LayoutParams(0, -2, 1f))
-        valoresPrevisao.addView(TextView(this).apply { text = "→"; textSize = 18f; setTextColor(0xFFB7D5CE.toInt()) })
-        valoresPrevisao.addView(estoqueDepois, LinearLayout.LayoutParams(0, -2, 1f))
-        previsao.addView(valoresPrevisao)
 
-        atualizarPrevisao = { estoqueDepois.text = "${estoqueAtual - quantidade} un." }
-        conteudo.addView(previsao, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        val pesoPrevisao = LinearLayout.LayoutParams(0, -2, 1f)
+        val pesoEstoqueDepois = LinearLayout.LayoutParams(0, -2, 1f)
+        val margemSeta = LinearLayout.LayoutParams(-2, -2).apply {
+            setMargins(dp(12), 0, dp(12), 0)
+        }
+
+
+        val linhaValores = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(valoresPrevisao)
+        }
+        previsao.addView(linhaValores)
+
+        val atualizarPrevisao = {
+            val localSelecionado = locaisspi.selectedItem?.toString().orEmpty()
+            val validadeExibida = vencimento.selectedItem?.toString().orEmpty()
+
+            val validadeBanco = runCatching {
+                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    .apply { isLenient = false }
+                    .parse(validadeExibida)
+                    ?.let { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(it) }
+                    .orEmpty()
+            }.getOrDefault("")
+
+            val estoqueAtual = if (localSelecionado.isNotBlank() && validadeBanco.isNotBlank()) {
+                bancoDados.listarQuantidadePorProdutoLocaleValidade(
+                    produtoEncontrado.id,
+                    localSelecionado,
+                    validadeBanco
+                )
+            } else {
+                0
+            }
+
+            tituloPrevisao.text = if (localSelecionado.isBlank()) {
+                "Como ficará o estoque"
+            } else {
+                "Como ficará o estoque em $localSelecionado"
+            }
+
+            estoqueAntes.text = "$estoqueAtual un."
+            estoqueDepois.text = "${(estoqueAtual - quantidade).coerceAtLeast(0)} un."
+        }
+
+        val atualizarQuantidade = { nova: Int ->
+            quantidade = nova.coerceAtLeast(1)
+            quantidadeTexto.text = "$quantidade un."
+            atualizarPrevisao()
+        }
+
+        controleQuantidade.getChildAt(0).setOnClickListener {
+            atualizarQuantidade(quantidade - 1)
+        }
+        controleQuantidade.getChildAt(2).setOnClickListener {
+            atualizarQuantidade(quantidade + 1)
+        }
+
+        valoresPrevisao.addView(estoqueAntes, pesoPrevisao)
+        valoresPrevisao.addView(setaPrevisao, margemSeta)
+        valoresPrevisao.addView(estoqueDepois, pesoEstoqueDepois)
+
+        fun atualizarVencimentos(local: String) {
+            val validades = bancoDados.listarDataValidadePorProdutoLocal(
+                produtoEncontrado.id,
+                local
+            )
+
+            val datasFormatadas = validades.mapNotNull { data ->
+                runCatching {
+                    SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(data)?.let {
+                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)
+                    }
+                }.getOrNull()
+            }
+
+            vencimento.adapter = android.widget.ArrayAdapter(
+                this@MovProdutosActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                datasFormatadas
+            )
+
+            atualizarPrevisao()
+        }
+
+        vencimento.onItemSelectedListener =
+            object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: android.widget.AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    atualizarPrevisao()
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                    atualizarPrevisao()
+                }
+            }
+
+        locaisspi.onItemSelectedListener =
+            object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: android.widget.AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    val localSelecionado = locaisproduto.getOrNull(position).orEmpty()
+                    atualizarVencimentos(localSelecionado)
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                    vencimento.adapter = null
+                    atualizarPrevisao()
+                }
+            }
+
+        // Exibe primeiro o formulário e depois o resumo da previsão.
+        conteudo.addView(cartaoFormulario, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        conteudo.addView(
+            previsao,
+            LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
+        )
         // val listarLocaisPorProduto = bancoDados.listarLocaisPorProduto(produtoEncontrado.id)
         // Toast.makeText(
         //     this@MovProdutosActivity,
@@ -620,12 +723,49 @@ class MovProdutosActivity : Activity() {
                 val localInput = locaisspi.selectedItem?.toString().orEmpty()
                 val localInformado = localInput.trim()
                 val validadeExibida = vencimentoInput.trim()
-                val validadeBanco = if (validadeExibida.isBlank()) ""
-                else try {
-                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply { isLenient = false }
-                        .parse(validadeExibida)?.let { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(it) }.orEmpty()
-                } catch (_: Exception) {
-                    ""
+                if (localInformado.isBlank() || validadeExibida.isBlank()) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Selecione um local e uma data de validade.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                val validadeBanco = runCatching {
+                    SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply {
+                        isLenient = false
+                    }.parse(validadeExibida)?.let {
+                        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(it)
+                    }.orEmpty()
+                }.getOrDefault("")
+                if (validadeBanco.isBlank()) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "A data de validade selecionada é inválida.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                val quantidadebanco = bancoDados.listarQuantidadePorProdutoLocaleValidade(
+                    produtoEncontrado.id,
+                    localInformado,
+                    validadeBanco
+                )
+                if (quantidade <= 0) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Informe uma quantidade válida.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                if (quantidade > quantidadebanco) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Quantidade solicitada excede o estoque disponível.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
                 }
                 if (localInformado.isBlank()) {
                     Toast.makeText(
@@ -643,22 +783,26 @@ class MovProdutosActivity : Activity() {
                     ).show()
                     return@setOnClickListener
                 }
-                Toast.makeText(
-                    this@MovProdutosActivity,
-                    "$validadeExibida $validadeBanco $localInformado $quantidade $nomeProduto",
-                    Toast.LENGTH_LONG
-                ).show()
-                // val sucesso =
-                //     bancoDados.addMovementacaoRetirada(id, localInformado, quantidade)
-                // if (sucesso) {
-                //     Toast.makeText(this@MovProdutosActivity, "Retirada registrada com sucesso.", Toast.LENGTH_SHORT)
-                //         .show()
-                //     finish()
-                // } else Toast.makeText(
-                //     this@MovProdutosActivity,
-                //     "Não foi possível registrar a retirada.",
-                //     Toast.LENGTH_SHORT
-                // ).show()
+                val sucesso = bancoDados.addMovementacaoRetirada(
+                    id,
+                    localInformado,
+                    quantidade,
+                    validadeBanco
+                )
+                if (sucesso) {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Retirada registrada com sucesso.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@MovProdutosActivity,
+                        "Não foi possível registrar a retirada.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
         raiz.addView(registrar, LinearLayout.LayoutParams(-1, dp(48)).apply {

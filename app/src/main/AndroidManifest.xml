@@ -16,6 +16,12 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".OutrosActivity"
+            android:exported="false" />
+        <activity android:name=".AlertaVencimentoActivity" android:exported="false" />
+        <activity android:name=".OndeGuardouActivity" android:exported="false" />
+        <activity android:name=".RelatorioGastosActivity" android:exported="false" />
+        <activity
             android:name=".CadastroProdutoActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
@@ -30,6 +36,21 @@
             android:exported="false" />
         <activity
             android:name=".MovProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ListaCompraProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HistoricoProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".VencimentosProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OndeGuardouProdutosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".GastosProdutosActivity"
             android:exported="false" />
     </application>
 </manifest>

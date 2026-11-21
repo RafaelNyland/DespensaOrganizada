@@ -1,7 +1,6 @@
 package br.com.dispensa
 
 import android.view.Gravity
-import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -14,6 +13,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         montarPainel()
     }
+
     private fun montarPainel() {
         val fundo = 0xFFF5F7F6.toInt()
         val verdeEscuro = 0xFF10564F.toInt()
@@ -62,7 +62,7 @@ class MainActivity : Activity() {
             "↑  ↓\nENTRADAS\nE RETIRADAS",
             "⬡\nMEUS\nPRODUTOS",
             "▱\nLISTA DE\nCOMPRAS",
-            "•••\nOutros"
+            "•••\nOUTROS"
         )
 
         opcoes.forEach { titulo ->
@@ -81,6 +81,16 @@ class MainActivity : Activity() {
                 if (titulo.contains("MEUS")) {
                     setOnClickListener {
                         startActivity(Intent(this@MainActivity, MeusProdutosActivity::class.java))
+                    }
+                }
+                if (titulo.contains("LISTA")) {
+                    setOnClickListener {
+                        startActivity(Intent(this@MainActivity, ListaCompraProdutosActivity::class.java))
+                    }
+                }
+                if (titulo.contains("OUTROS")) {
+                    setOnClickListener {
+                        startActivity(Intent(this@MainActivity, OutrosActivity::class.java))
                     }
                 }
             }, LinearLayout.LayoutParams(0, dp(72), 1f).apply {
