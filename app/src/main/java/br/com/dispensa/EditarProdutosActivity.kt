@@ -63,12 +63,11 @@ class EditarProdutosActivity : Activity() {
             setPadding(dp(16), dp(36), dp(16), dp(14))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
-        cabecalho.addView(TextView(this).apply {
-            text = "‹  Produtos"
-            textSize = 12f
-            setTextColor(verde)
-            setOnClickListener { finish() }
-        })
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Editar produtos"
             textSize = 22f
@@ -160,7 +159,8 @@ class EditarProdutosActivity : Activity() {
         }
         codigobarraInput = campo("Código atual").apply { setText(produto.codigo_barras) }
         linhaCodigo.addView(codigobarraInput, LinearLayout.LayoutParams(0, dp(42), 1f))
-        linhaCodigo.addView(botao("LER CÓDIGO") { lerCodigoBarras() },
+        linhaCodigo.addView(
+            botao("LER CÓDIGO", verdeEscuro) { lerCodigoBarras() },
             LinearLayout.LayoutParams(dp(104), dp(42)).apply { leftMargin = dp(6) })
         painelCodigo.addView(linhaCodigo)
         conteudo.addView(painelCodigo, LinearLayout.LayoutParams(-1, -2).apply {
@@ -168,13 +168,17 @@ class EditarProdutosActivity : Activity() {
         })
 
         conteudo.addView(rotuloCampo("Foto do produto"))
-        conteudo.addView(botao("TIRAR FOTO") { tirarFoto() },
+        conteudo.addView(
+            botao("TIRAR FOTO", verdeEscuro) { tirarFoto() },
             LinearLayout.LayoutParams(dp(112), dp(42)).apply { bottomMargin = dp(10) })
 
         val linhaConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val colunaConteudo = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         colunaConteudo.addView(rotuloCampo("Conteúdo por embalagem"))
-        val conteudoEmbalagemInput = campo("Conteúdo", android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL).apply {
+        val conteudoEmbalagemInput = campo(
+            "Conteúdo",
+            android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        ).apply {
             setText(produto.conteudo_embalagem.toString().removeSuffix(".0"))
         }
         colunaConteudo.addView(conteudoEmbalagemInput, campoParams())
@@ -198,7 +202,7 @@ class EditarProdutosActivity : Activity() {
         }
         conteudo.addView(estoqueMinimo, campoParams())
 
-        val botaoSalvar = botao("✓  Salvar alterações") {
+        val botaoSalvar = botao("✓  Salvar alterações", verdeEscuro) {
             salvarAlteracoes(produto, nomeInput, categoria, conteudoEmbalagemInput, unidade, estoqueMinimo)
         }.apply { textSize = 13f }
         conteudo.addView(botaoSalvar, LinearLayout.LayoutParams(-1, dp(48)).apply {
@@ -338,18 +342,24 @@ class EditarProdutosActivity : Activity() {
     private fun campo(dica: String, tipo: Int = android.text.InputType.TYPE_CLASS_TEXT) = EditText(this).apply {
         hint = dica
         inputType = tipo
-        setSingleLine(true)
         textSize = 12f
         setPadding(dp(10), 0, dp(10), 0)
         background = forma(0xFFFFFFFF.toInt(), linha, 8)
     }
 
-    private fun botao(texto: String, acao: () -> Unit) = Button(this).apply {
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
         text = texto
-        textSize = 10f
         setTextColor(0xFFFFFFFF.toInt())
-        background = forma(verde, verde, 9)
-        setOnClickListener { acao() }
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
     }
 
     private fun campoParams() = LinearLayout.LayoutParams(-1, dp(42)).apply {

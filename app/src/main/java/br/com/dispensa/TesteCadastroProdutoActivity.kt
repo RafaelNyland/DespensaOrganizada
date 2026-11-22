@@ -64,7 +64,7 @@ class TesteCadastroProdutoActivity : Activity() {
 
 
         cabecalho.addView(TextView(this).apply {
-            text = "Procurar Produto"
+            text = "Leia o codigo do Produto"
             textSize = 23f
             gravity = Gravity.CENTER
             setTextColor(verdeEscuro)
@@ -115,7 +115,19 @@ class TesteCadastroProdutoActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(112), dp(48)).apply {
             leftMargin = dp(8)
         })
+        val pagina2 = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(fundo)
+            setPadding(dp(16), dp(0), dp(16), dp(0))
+        }
+        pagina2.addView(TextView(this).apply {
+            text = "* ATENÇÃO a leitura não é 100% correta, após a leitura verifique se o codigo está correto"
+            textSize = 11f
+            setTextColor(cinza)
+            setPadding(0, dp(10), 0, 0)
+        })
         pagina.addView(codigoLinha)
+        pagina.addView(pagina2)
 
         setContentView(pagina)
     }

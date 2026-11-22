@@ -87,7 +87,6 @@ class HistoricoProdutosActivity : Activity() {
             textSize = 13f
             setTextColor(verdeEscuro)
             gravity = Gravity.CENTER_VERTICAL
-            setSingleLine(true)
         }
         val campoPeriodoHistorico = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -244,8 +243,9 @@ class HistoricoProdutosActivity : Activity() {
         val entradaHistorico = item.tipoMovimentacao.equals("ENTRADA", ignoreCase = true)
         val corMovimento = if (entradaHistorico) verde else vermelho
         val fundoMovimento = if (entradaHistorico) 0xFFE8F4F0.toInt() else 0xFFFFEFEC.toInt()
+        val fotomov = if (entradaHistorico) "↙" else "↗"
         addView(TextView(this@HistoricoProdutosActivity).apply {
-            text = if (entradaHistorico) "↙" else "↗"
+            text = fotomov
             textSize = 16f
             gravity = Gravity.CENTER
             setTextColor(corMovimento)
@@ -265,15 +265,15 @@ class HistoricoProdutosActivity : Activity() {
         val horaHistorico = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(item.dataHora))
         val detalheMovimentacao = if (entradaHistorico) "Entrada" else "Retirada"
         textosHistorico.addView(TextView(this@HistoricoProdutosActivity).apply {
-            text = "$detalheMovimentacao • $horaHistorico"
+            text = "$detalheMovimentacao - $horaHistorico"
             textSize = 9f
             setTextColor(cinza)
             setPadding(0, dp(2), 0, 0)
         })
         val detalheValorHistorico = if (entradaHistorico) {
-            "Compra ${formatarMoedaHistorico(item.precoUnitario * item.quantidade)} • Saldo: ${item.saldoAtual} un."
+            "Compra ${formatarMoedaHistorico(item.precoUnitario * item.quantidade)} - Saldo: ${item.saldoAtual} un."
         } else {
-            "Consumo • Saldo: ${item.saldoAtual} un."
+            "Consumo - Saldo: ${item.saldoAtual} un."
         }
         textosHistorico.addView(TextView(this@HistoricoProdutosActivity).apply {
             text = detalheValorHistorico

@@ -24,7 +24,8 @@ data class ProdutoEmFalta(
     val foto: ByteArray?,
     val estoqueAtual: Int,
     val estoqueMinimo: Int,
-    val quantidadeFaltando: Int
+    val quantidadeFaltando: Int,
+    val conteudo_embalagem: Double
 )
 
 data class Movimentacao(
@@ -168,13 +169,15 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
     fun listarProdutosEmFalta(): List<ProdutoEmFalta> {
         val produtos = mutableListOf<ProdutoEmFalta>()
         readableDatabase.rawQuery(
-            """SELECT p.id, p.nome, p.categoria, p.unidade, p.foto, p.estoque_minimo,
-                      COALESCE(SUM(e.quantidade), 0) AS estoque_atual
-               FROM produto p
-               LEFT JOIN estoque_atual e ON e.produto_id = p.id
-               GROUP BY p.id, p.nome, p.categoria, p.unidade, p.estoque_minimo
-               HAVING COALESCE(SUM(e.quantidade), 0) < p.estoque_minimo
-               ORDER BY p.categoria COLLATE NOCASE, p.nome COLLATE NOCASE""".trimIndent(),
+            """SELECT p.id, p.nome, p.categoria, p.unidade, p.foto,
+                    p.estoque_minimo, p.conteudo_embalagem,
+                    COALESCE(SUM(e.quantidade), 0) AS estoque_atual
+            FROM produto p
+            LEFT JOIN estoque_atual e ON e.produto_id = p.id
+            GROUP BY p.id, p.nome, p.categoria, p.unidade, p.foto,
+                        p.estoque_minimo, p.conteudo_embalagem
+            HAVING COALESCE(SUM(e.quantidade), 0) < p.estoque_minimo
+            ORDER BY p.categoria COLLATE NOCASE, p.nome COLLATE NOCASE""".trimIndent(),
             null
         ).use { cursor ->
             while (cursor.moveToNext()) {
@@ -186,6 +189,7 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
                     categoria = cursor.getString(cursor.getColumnIndexOrThrow("categoria")),
                     unidade = cursor.getString(cursor.getColumnIndexOrThrow("unidade")),
                     foto = cursor.getBlob(cursor.getColumnIndexOrThrow("foto")),
+                    conteudo_embalagem = cursor.getDouble(cursor.getColumnIndexOrThrow("conteudo_embalagem")),
                     estoqueAtual = atual,
                     estoqueMinimo = minimo,
                     quantidadeFaltando = minimo - atual
@@ -238,6 +242,33 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
             }
         }
         return registrosHistorico
+    }
+
+    fun listarUltimasMovimentacoes(limite: Int = 5): List<ItemHistorico> {
+        val registros = mutableListOf<ItemHistorico>()
+        readableDatabase.rawQuery(
+            """SELECT p.nome, m.tipo_movimentacao, m.quantidade, m.data_hora,
+                      m.preco_unitario, m.local_guardado,
+                      COALESCE((SELECT SUM(e.quantidade) FROM estoque_atual e WHERE e.produto_id = p.id), 0) AS saldo
+               FROM movimentacao m
+               INNER JOIN produto p ON p.id = m.produto_id
+               ORDER BY m.data_hora DESC, m.id DESC
+               LIMIT ?""".trimIndent(),
+            arrayOf(limite.coerceAtLeast(1).toString())
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                registros += ItemHistorico(
+                    nomeProduto = cursor.getString(0),
+                    tipoMovimentacao = cursor.getString(1),
+                    quantidade = cursor.getInt(2),
+                    dataHora = cursor.getLong(3),
+                    precoUnitario = cursor.getDouble(4),
+                    localGuardado = cursor.getString(5),
+                    saldoAtual = cursor.getInt(6)
+                )
+            }
+        }
+        return registros
     }
 
     // totol de produtos no estoque no local
@@ -535,7 +566,14 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
     //Verifica se o nome do produto já existe no banco de dados
     fun nomeExiste(name: String): Boolean {
         readableDatabase.query(
-            "produto", arrayOf("id"), "LOWER(TRIM(nome)) = LOWER(TRIM(?))", arrayOf(name.trim()), null, null, null, "1"
+            "produto",
+            arrayOf("id"),
+            "LOWER(TRIM(nome)) = LOWER(TRIM(?))",
+            arrayOf(name.trim()),
+            null,
+            null,
+            null,
+            "1"
         ).use { return it.moveToFirst() }
     }
 

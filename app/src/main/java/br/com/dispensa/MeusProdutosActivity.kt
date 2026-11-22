@@ -50,6 +50,11 @@ class MeusProdutosActivity : Activity() {
             setPadding(dp(16), dp(50), dp(16), dp(20))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Meus produtos"
             textSize = 22f
@@ -333,7 +338,6 @@ class MeusProdutosActivity : Activity() {
     ) = EditText(this).apply {
         hint = dica
         inputType = tipo
-        setSingleLine(true)
         textSize = 14f
         setPadding(dp(10), 0, dp(10), 0)
         background = fundoArredondado(0xFFFFFFFF.toInt(), dp(8))
@@ -375,5 +379,20 @@ class MeusProdutosActivity : Activity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
+    }
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
     }
 }

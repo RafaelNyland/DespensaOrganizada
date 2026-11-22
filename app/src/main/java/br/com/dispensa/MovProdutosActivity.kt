@@ -71,11 +71,17 @@ class MovProdutosActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(fundo)
         }
+
         val cabecalho = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(50), dp(16), dp(20))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "ERROR "
             textSize = 22f
@@ -83,7 +89,7 @@ class MovProdutosActivity : Activity() {
             setTypeface(null, Typeface.BOLD)
         })
         cabecalho.addView(TextView(this).apply {
-            text = "$erro"
+            text = erro
             textSize = 12f
             setTextColor(cinza)
             setPadding(0, dp(4), 0, 0)
@@ -828,7 +834,6 @@ class MovProdutosActivity : Activity() {
     ) = EditText(this).apply {
         hint = dica
         inputType = tipo
-        setSingleLine(true)
         textSize = 14f
         setPadding(dp(10), 0, dp(10), 0)
         background = fundoArredondado(0xFFFFFFFF.toInt(), dp(8))
@@ -839,6 +844,21 @@ class MovProdutosActivity : Activity() {
             setColor(cor)
             cornerRadius = raio.toFloat()
         }
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
+    }
 
     private fun campoParams() =
         LinearLayout.LayoutParams(-1, dp(44)).apply {

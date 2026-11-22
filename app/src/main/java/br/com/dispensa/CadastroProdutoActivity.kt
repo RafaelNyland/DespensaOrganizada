@@ -102,6 +102,17 @@ class CadastroProdutoActivity : Activity() {
             textSize = 12f
             setTextColor(cinza)
         })
+        val pagina2 = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(fundo)
+            setPadding(dp(16), dp(0), dp(16), dp(0))
+        }
+        pagina2.addView(TextView(this).apply {
+            text = "* ATENÇÃO a leitura não é 100% correta, após a leitura verifique se o codigo está correto"
+            textSize = 11f
+            setTextColor(cinza)
+            setPadding(0, dp(10), 0, 0)
+        })
         pagina.addView(codigoTitulo)
 
         val codigoLinha = LinearLayout(this).apply {
@@ -124,8 +135,8 @@ class CadastroProdutoActivity : Activity() {
             leftMargin = dp(8)
         })
         pagina.addView(codigoLinha)
-
-        pagina.addView(rotulo("Foto do produto *"))
+        pagina.addView(pagina2)
+        pagina.addView(rotulo("Foto do produto"))
         val fotoLinha = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL

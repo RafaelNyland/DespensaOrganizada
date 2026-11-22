@@ -9,6 +9,8 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Button
+
 
 class OutrosActivity : Activity() {
     private val fundo = 0xFFF5F7F6.toInt()
@@ -33,6 +35,11 @@ class OutrosActivity : Activity() {
             setPadding(dp(20), dp(50), dp(20), dp(20))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Outros recursos"
             textSize = 23f
@@ -180,4 +187,19 @@ class OutrosActivity : Activity() {
 
     private fun dp(valor: Int): Int =
         (valor * resources.displayMetrics.density).toInt()
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
+    }
 }

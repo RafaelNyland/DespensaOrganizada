@@ -12,6 +12,9 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
 import android.widget.TextView
+import android.widget.Button
+import android.content.Intent
+
 
 class ListaCompraProdutosActivity : Activity() {
     private val verdeEscuro = 0xFF10564F.toInt()
@@ -39,6 +42,11 @@ class ListaCompraProdutosActivity : Activity() {
             setPadding(dp(16), dp(50), dp(16), dp(14))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Lista de compras"
             textSize = 21f
@@ -72,7 +80,7 @@ class ListaCompraProdutosActivity : Activity() {
         }
         val quantidadeProdutosFaltando = produtosFaltando.size
         resumo.addView(TextView(this).apply {
-            text = "$quantidadeProdutosFaltando produtos"
+            text = "$quantidadeProdutosFaltando produtos faltando no total"
             textSize = 17f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(null, Typeface.BOLD)
@@ -213,6 +221,21 @@ class ListaCompraProdutosActivity : Activity() {
 
     private fun dp(valor: Int): Int =
         (valor * resources.displayMetrics.density).toInt()
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
+    }
 }
 
 

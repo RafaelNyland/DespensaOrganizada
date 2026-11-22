@@ -8,6 +8,8 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Button
+import android.content.Intent
 
 class GastosProdutosActivity : Activity() {
     private val verdeEscuro = 0xFF10564F.toInt()
@@ -35,6 +37,11 @@ class GastosProdutosActivity : Activity() {
             setPadding(dp(16), dp(50), dp(16), dp(14))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Relatório de gastos"
             textSize = 21f
@@ -78,6 +85,21 @@ class GastosProdutosActivity : Activity() {
 
     private fun dp(valor: Int): Int =
         (valor * resources.displayMetrics.density).toInt()
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
+    }
 }
 
 

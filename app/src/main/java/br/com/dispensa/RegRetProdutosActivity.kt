@@ -48,6 +48,11 @@ class RegRetProdutosActivity : Activity() {
             setPadding(dp(16), dp(50), dp(16), dp(20))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
+        cabecalho.addView(botao("<-", verdeEscuro) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }, LinearLayout.LayoutParams(dp(44), dp(44)))
+
         cabecalho.addView(TextView(this).apply {
             text = "Entrada e retirada"
             textSize = 22f
@@ -328,5 +333,20 @@ class RegRetProdutosActivity : Activity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
+    }
+
+    private fun botao(
+        texto: String,
+        cor: Int,
+        aoClicar: () -> Unit
+    ): Button = Button(this).apply {
+        text = texto
+        setTextColor(0xFFFFFFFF.toInt())
+        setBackgroundColor(cor)
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(cor)
+            cornerRadius = dp(12).toFloat()
+        }
+        setOnClickListener { aoClicar() }
     }
 }
