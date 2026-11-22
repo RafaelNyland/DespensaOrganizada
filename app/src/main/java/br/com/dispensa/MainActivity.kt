@@ -25,6 +25,12 @@ class MainActivity : Activity() {
             setBackgroundColor(fundo)
             setPadding(dp(16), dp(50), dp(16), dp(20))
         }
+        val conteudo = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(fundo)
+            setPadding(dp(16), dp(50), dp(16), dp(20))
+        }
 
         // Título e botão de notificações
         val cabecalho = LinearLayout(this).apply {
@@ -44,7 +50,7 @@ class MainActivity : Activity() {
             text = "O que vamos fazer hoje?"
             textSize = 13f
             setTextColor(textoSecundario)
-            setPadding(0, dp(8), 0, dp(8))
+            setPadding(0, dp(8), 0, dp(15))
         })
 
         // Botão para cadastrar produtos
@@ -52,16 +58,16 @@ class MainActivity : Activity() {
             val intent = Intent(this, CadastroProdutoActivity::class.java)
             startActivity(intent)
         }, LinearLayout.LayoutParams(-1, dp(44)))
-
         // Atalhos
         val atalhos = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
 
         val opcoes = listOf(
+            "▱\nPROCURAR\nPRODUTOS",
+
             "↑  ↓\nENTRADAS\nE RETIRADAS",
             "⬡\nMEUS\nPRODUTOS",
-            "▱\nLISTA DE\nCOMPRAS",
             "•••\nOUTROS"
         )
 
@@ -73,6 +79,11 @@ class MainActivity : Activity() {
                 setTextColor(verdeEscuro)
                 background = formato(verdeClaro, dp(12))
                 setPadding(dp(4), dp(6), dp(4), dp(6))
+                if (titulo.contains("PROCURAR")) {
+                    setOnClickListener {
+                        startActivity(Intent(this@MainActivity, TesteCadastroProdutoActivity::class.java))
+                    }
+                }
                 if (titulo.contains("ENTRADAS")) {
                     setOnClickListener {
                         startActivity(Intent(this@MainActivity, RegRetProdutosActivity::class.java))
@@ -81,11 +92,6 @@ class MainActivity : Activity() {
                 if (titulo.contains("MEUS")) {
                     setOnClickListener {
                         startActivity(Intent(this@MainActivity, MeusProdutosActivity::class.java))
-                    }
-                }
-                if (titulo.contains("LISTA")) {
-                    setOnClickListener {
-                        startActivity(Intent(this@MainActivity, ListaCompraProdutosActivity::class.java))
                     }
                 }
                 if (titulo.contains("OUTROS")) {

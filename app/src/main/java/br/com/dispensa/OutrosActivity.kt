@@ -54,7 +54,22 @@ class OutrosActivity : Activity() {
         }
         rolagem.addView(conteudo)
         raiz.addView(rolagem, LinearLayout.LayoutParams(-1, 0, 1f))
-
+        val listacompras = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = forma(0xFFFFFFFF.toInt(), 0xFFE7ECEA.toInt(), 14)
+            addView(iconeOpcao("▱"), LinearLayout.LayoutParams(dp(48), dp(48)))
+            addView(
+                textosOpcao("Lista de compras", "Veja o que falta no seu estoque."),
+                LinearLayout.LayoutParams(0, -2, 1f)
+            )
+            addView(setaOpcao())
+            setOnClickListener {
+                startActivity(Intent(this@OutrosActivity, ListaCompraProdutosActivity::class.java))
+            }
+        }
+        conteudo.addView(listacompras, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         val historico = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL

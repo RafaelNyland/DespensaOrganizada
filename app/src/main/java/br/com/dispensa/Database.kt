@@ -508,6 +508,12 @@ class ProdutoDatabase(context: Context) : SQLiteOpenHelper(context, "dispensa.db
     fun buscarProdutoPorId(id: Long): Produto? =
         consultaProducts("id = ?", arrayOf(id.toString())).firstOrNull()
 
+    fun buscarProdutoPorCodigoBarras(codigoBarras: String): Produto? =
+        consultaProducts(
+            "codigo_barras = ?",
+            arrayOf(codigoBarras.trim())
+        ).firstOrNull()
+
     fun atualizarProduto(produto: Produto): Boolean {
         val valores = ContentValues().apply {
             put("nome", produto.nome.trim())

@@ -22,21 +22,23 @@ import android.view.View
 
 class CadastroProdutoActivity : Activity() {
     private lateinit var bancoDados: ProdutoDatabase
-     private lateinit var codigobarraInput: EditText
-     private lateinit var fotoPreview: ImageView
+    private lateinit var codigobarraInput: EditText
+    private lateinit var fotoPreview: ImageView
     private var fotoProduto: ByteArray? = null
 
     companion object {
         private const val SOLICITACAO_FOTO = 2101
     }
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val codigoBarrasexterno = intent.getStringExtra("codigo_barras").orEmpty()
         bancoDados = ProdutoDatabase(this)
-        viewCabecalho()
+        viewCabecalho(codigoBarrasexterno)
     }
-    private fun viewCabecalho() {
-        
+
+    private fun viewCabecalho(codigoBarrasexterno: String) {
+
         //CABEÇALHO
         val fundo = 0xFFF5F7F6.toInt()
         val verdeEscuro = 0xFF10564F.toInt()
@@ -60,7 +62,7 @@ class CadastroProdutoActivity : Activity() {
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
         }, LinearLayout.LayoutParams(dp(44), dp(44)))
-        
+
 
         cabecalho.addView(TextView(this).apply {
             text = "Cadastrar Produto"
@@ -69,7 +71,7 @@ class CadastroProdutoActivity : Activity() {
             setTextColor(verdeEscuro)
             setTypeface(null, android.graphics.Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, dp(48), 1f))
-        
+
         pagina.addView(cabecalho)
 
         pagina.addView(TextView(this).apply {
@@ -78,7 +80,7 @@ class CadastroProdutoActivity : Activity() {
             setTextColor(texto)
             setPadding(0, dp(8), 0, dp(8))
         })
-              
+
         //RESTO DA PAGINA
 
         pagina.addView(rotulo("Nome do produto *"))
@@ -107,6 +109,9 @@ class CadastroProdutoActivity : Activity() {
             gravity = android.view.Gravity.CENTER_VERTICAL
         }
         codigobarraInput = campo("Leia ou digite o código")
+        if (codigoBarrasexterno.isNotEmpty()) {
+            codigobarraInput.setText(codigoBarrasexterno)
+        }
         codigoLinha.addView(codigobarraInput, LinearLayout.LayoutParams(0, dp(48), 1f))
 
         codigoLinha.addView(Button(this).apply {
@@ -114,7 +119,7 @@ class CadastroProdutoActivity : Activity() {
             textSize = 11f
             setTextColor(0xFFFFFFFF.toInt())
             background = fundoArredondado(verde, dp(10))
-                setOnClickListener { lerCodigoBarras() }
+            setOnClickListener { lerCodigoBarras() }
         }, LinearLayout.LayoutParams(dp(112), dp(48)).apply {
             leftMargin = dp(8)
         })
@@ -235,7 +240,6 @@ class CadastroProdutoActivity : Activity() {
     ) = EditText(this).apply {
         hint = dica
         inputType = tipo
-        setSingleLine(true)
         textSize = 14f
         setPadding(dp(10), 0, dp(10), 0)
         background = fundoArredondado(0xFFFFFFFF.toInt(), dp(8))
@@ -251,7 +255,7 @@ class CadastroProdutoActivity : Activity() {
             setColor(cor)
             cornerRadius = raio.toFloat()
         }
-        
+
     private fun botao(
         texto: String,
         cor: Int,
@@ -266,15 +270,16 @@ class CadastroProdutoActivity : Activity() {
         }
         setOnClickListener { aoClicar() }
     }
-    
+
     private fun dp(valor: Int): Int =
         (valor * resources.displayMetrics.density).toInt()
-    
+
     private fun formato(cor: Int, raio: Int): android.graphics.drawable.GradientDrawable =
         android.graphics.drawable.GradientDrawable().apply {
             setColor(cor)
             cornerRadius = raio.toFloat()
         }
+
     private fun lerCodigoBarras() {
         val opcoesLeitor = GmsBarcodeScannerOptions.Builder()
             .enableAutoZoom()
@@ -304,6 +309,7 @@ class CadastroProdutoActivity : Activity() {
                 ).show()
             }
     }
+
     // a parte de tirar foto do produto
     private fun tirarFoto() {
         try {
@@ -312,6 +318,7 @@ class CadastroProdutoActivity : Activity() {
             Toast.makeText(this, "Não foi encontrado um app de câmera.", Toast.LENGTH_LONG).show()
         }
     }
+
     @Deprecated("Usado para receber a foto da câmera")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -330,8 +337,8 @@ class CadastroProdutoActivity : Activity() {
     }
 
     private fun fieldParams() = LinearLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(6); bottomMargin = dp(14) }
-    
-    
+
+
     //salvar produto no banco de dados
     private fun salvarProduto(
         campoNome: EditText,
