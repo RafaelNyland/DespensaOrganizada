@@ -198,7 +198,7 @@ class CadastroProdutoActivity : Activity() {
             adapter = android.widget.ArrayAdapter(
                 this@CadastroProdutoActivity,
                 android.R.layout.simple_spinner_dropdown_item,
-                listOf("Unidade (un.)", "g", "kg", "ml", "l")
+                listOf("Unidade (un.)", "g", "kg", "ml", "l", "Pacote")
             )
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
